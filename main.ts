@@ -15,30 +15,32 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
 
-const here = fileURLToPath(new URL('.', import.meta.url));
-const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const entryDir = fileURLToPath(new URL('.', import.meta.url));
+const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
 // The copy below is byte-for-byte deterministic: the same repository files
 // go in every time, and buildDossier writes no timestamps or random values,
 // so the grader's two runs of this program produce identical /output trees.
-mkdirSync(out, { recursive: true });
-cpSync(join(here, 'game'), join(out, 'game'), { recursive: true });
-mkdirSync(join(out, 'screenshots'), { recursive: true });
+mkdirSync(outputDir, { recursive: true });
+cpSync(join(entryDir, 'game'), join(outputDir, 'game'), { recursive: true });
+mkdirSync(join(outputDir, 'screenshots'), { recursive: true });
 // Screenshots are optional for the gate: copy them only when the folder
 // exists, so an entry without screenshots still runs instead of crashing.
-if (existsSync(join(here, 'screenshots'))) cpSync(join(here, 'screenshots'), join(out, 'screenshots'), { recursive: true });
+if (existsSync(join(entryDir, 'screenshots'))) cpSync(join(entryDir, 'screenshots'), join(outputDir, 'screenshots'), { recursive: true });
 
-// The scorer's own caps: only text_max_bytes shapes the bytes; the others
-// refuse an entry the scorer would refuse (more than 4 screenshots or one
-// over 256 KiB; more than 993 files in game/ or 48 MiB of game files, in
+// The scorer's own caps, named once so the hand-in call below reads
+// plainly: only text_max_bytes shapes the bytes; the others refuse an
+// entry the scorer would refuse (more than 4 screenshots or one over
+// 256 KiB; more than 993 files in game/ or 48 MiB of game files, in
 // all, or a path under game/ over 1000 bytes).
+const DOSSIER_CAPS = {
+  text_max_bytes: 163840,
+  screenshots: { max: 4, max_bytes: 262144 },
+  game_max_files: 993,
+  game_max_bytes: 50331648,
+  game_path_max_bytes: 1000,
+};
 writeFileSync(
-  join(out, 'dossier.json'),
-  buildDossier(out, {
-    text_max_bytes: 163840,
-    screenshots: { max: 4, max_bytes: 262144 },
-    game_max_files: 993,
-    game_max_bytes: 50331648,
-    game_path_max_bytes: 1000,
-  }),
+  join(outputDir, 'dossier.json'),
+  buildDossier(outputDir, DOSSIER_CAPS),
 );

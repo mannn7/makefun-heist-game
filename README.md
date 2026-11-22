@@ -4,7 +4,7 @@
 [![rank](https://make.fun/badge/best-heist-game-20261122-0559/mannn7/makefun-heist-game/rank.svg)](https://make.fun/bounty/best-heist-game-20261122-0559/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=best-heist-game-20261122-0559)
 [![reward](https://make.fun/badge/best-heist-game-20261122-0559/mannn7/makefun-heist-game/reward.svg)](https://make.fun/bounty/best-heist-game-20261122-0559?utm_source=github&utm_medium=readme&utm_campaign=best-heist-game-20261122-0559)
 
-**The Velvet Vault** is a top-down museum heist game that runs offline in a desktop browser. You are the thief crossing a night museum: marble floors, a red carpet, display cases and statues for cover, guards walking patrols with sweeping vision cones, wall cameras sweeping their own cones, masterpieces to lift — and one big **ALARM** meter that decides whether you walk out rich or get caught.
+**The Velvet Vault** is a top-down stealth game that runs offline in a desktop browser. You play the thief crossing a night museum: marble floors, a red carpet, display cases and statues to hide behind, guards walking patrols with sweeping vision cones, wall cameras sweeping their own cones, masterpieces to lift — and one big **ALARM** meter that decides whether you walk out rich or get caught.
 
 ## How to play
 
