@@ -1,10 +1,11 @@
 // The Velvet Vault — guards: patrols, suspicion and the chase.
-// One job: move each guard along its route and decide how suspicious it is.
+// One job: walk each guard along its route and decide how suspicious
+// it is. A guard has three moods: patrol, suspicious, chase.
 
-import { angleTo, dist, seenStrength } from './vision.js';
+import { bearingTo, distance, spotStrength } from './vision.js';
 import { PLAYER } from './config.js';
 
-export function makeGuard(def) {
+export function spawnGuard(def) {
   const start = def.waypoints[0];
   return {
     name: def.name,
@@ -24,87 +25,96 @@ export function makeGuard(def) {
 }
 
 // Walk toward the current waypoint; turn to face the direction of travel.
-function stepPatrol(g, dt) {
-  const target = g.waypoints[g.leg];
-  const d = dist(g.x, g.y, target.x, target.y);
-  const step = g.speed * dt;
+function stepPatrol(guard, dt) {
+  const target = guard.waypoints[guard.leg];
+  const d = distance(guard.x, guard.y, target.x, target.y);
+  const step = guard.speed * dt;
   if (d <= Math.max(step, 2)) {
-    g.x = target.x;
-    g.y = target.y;
-    g.leg = (g.leg + 1) % g.waypoints.length;
-    g.pause = 0.9; // glance around at each corner — the fair moment to slip past
+    guard.x = target.x;
+    guard.y = target.y;
+    guard.leg = (guard.leg + 1) % guard.waypoints.length;
+    guard.pause = 0.9; // glance around at each corner — the fair moment to slip past
     return;
   }
-  g.facing = angleTo(g.x, g.y, target.x, target.y);
-  g.x += ((target.x - g.x) / d) * step;
-  g.y += ((target.y - g.y) / d) * step;
+  guard.facing = bearingTo(guard.x, guard.y, target.x, target.y);
+  guard.x += ((target.x - guard.x) / d) * step;
+  guard.y += ((target.y - guard.y) / d) * step;
 }
 
-export function updateGuard(g, dt, thief, blockers, now) {
+// Walk toward the lure point, scanning once arrived.
+function stepLure(guard, dt, now) {
+  const d = distance(guard.x, guard.y, guard.lure.x, guard.lure.y);
+  const step = guard.speed * 1.15 * dt;
+  if (d > step) {
+    guard.facing = bearingTo(guard.x, guard.y, guard.lure.x, guard.lure.y);
+    guard.x += ((guard.lure.x - guard.x) / d) * step;
+    guard.y += ((guard.lure.y - guard.y) / d) * step;
+  } else {
+    guard.facing += dt * 1.6; // scanning the spot where the noise came from
+  }
+  guard.suspicion = Math.max(0, guard.suspicion - dt * 0.4);
+}
+
+// Sprint at the thief's last known spot.
+function stepChase(guard, dt, thief) {
+  const d = distance(guard.x, guard.y, thief.x, thief.y);
+  const step = guard.speed * 1.85 * dt;
+  if (d > step) {
+    guard.facing = bearingTo(guard.x, guard.y, thief.x, thief.y);
+    guard.x += ((thief.x - guard.x) / d) * step;
+    guard.y += ((thief.y - guard.y) / d) * step;
+  }
+}
+
+export function tickGuard(guard, dt, thief, blockers, now) {
   // A lured guard walks to the noise and looks around for a while.
-  if (g.lure) {
-    if (now < g.lure.until) {
-      const d = dist(g.x, g.y, g.lure.x, g.lure.y);
-      const step = g.speed * 1.15 * dt;
-      if (d > step) {
-        g.facing = angleTo(g.x, g.y, g.lure.x, g.lure.y);
-        g.x += ((g.lure.x - g.x) / d) * step;
-        g.y += ((g.lure.y - g.y) / d) * step;
-      } else {
-        g.facing += dt * 1.6; // scanning the spot where the noise came from
-      }
-      g.suspicion = Math.max(0, g.suspicion - dt * 0.4);
-      return g.suspicion;
+  if (guard.lure) {
+    if (now < guard.lure.until) {
+      stepLure(guard, dt, now);
+      return guard.suspicion;
     }
-    g.lure = null;
+    guard.lure = null;
   }
 
-  if (g.pause > 0) {
-    g.pause -= dt;
-    g.facing += dt * 0.9; // slow look left and right at the corner
-  } else if (g.state === 'chase') {
-    // Sprint at the thief's last known spot.
-    const d = dist(g.x, g.y, thief.x, thief.y);
-    const step = g.speed * 1.85 * dt;
-    if (d > step) {
-      g.facing = angleTo(g.x, g.y, thief.x, thief.y);
-      g.x += ((thief.x - g.x) / d) * step;
-      g.y += ((thief.y - g.y) / d) * step;
-    }
+  if (guard.pause > 0) {
+    guard.pause -= dt;
+    guard.facing += dt * 0.9; // slow look left and right at the corner
+  } else if (guard.state === 'chase') {
+    stepChase(guard, dt, thief);
   } else {
-    stepPatrol(g, dt);
+    stepPatrol(guard, dt);
   }
 
   // Vision: how strongly does this guard see the thief right now?
-  const watcher = { x: g.x, y: g.y, facing: g.facing, halfAngle: g.halfAngle, range: g.range };
-  let seen = seenStrength(watcher, thief.x, thief.y, blockers, thief.sneaking, thief.hidden);
+  const watcher = { x: guard.x, y: guard.y, facing: guard.facing, halfAngle: guard.halfAngle, range: guard.range };
+  let seen = spotStrength(watcher, thief.x, thief.y, blockers, thief.sneaking, thief.hidden);
   // Bumping into a guard at arm's length is always noticed.
-  if (dist(g.x, g.y, thief.x, thief.y) < PLAYER.seenRadius * 0.55) seen = Math.max(seen, 0.9);
+  if (distance(guard.x, guard.y, thief.x, thief.y) < PLAYER.notice * 0.55) seen = Math.max(seen, 0.9);
 
   if (seen > 0.25) {
-    g.suspicion = Math.min(1, g.suspicion + seen * dt * 1.4);
+    guard.suspicion = Math.min(1, guard.suspicion + seen * dt * 1.4);
   } else {
-    g.suspicion = Math.max(0, g.suspicion - dt * 0.35);
+    guard.suspicion = Math.max(0, guard.suspicion - dt * 0.35);
   }
 
-  if (g.suspicion >= 1) g.state = 'chase';
-  else if (g.suspicion > 0.45) g.state = 'suspicious';
-  else if (g.state !== 'chase') g.state = 'patrol';
-  if (g.state === 'chase' && seen <= 0.05) {
+  if (guard.suspicion >= 1) guard.state = 'chase';
+  else if (guard.suspicion > 0.45) guard.state = 'suspicious';
+  else if (guard.state !== 'chase') guard.state = 'patrol';
+  if (guard.state === 'chase' && seen <= 0.05) {
     // Lost the thief: give up after the suspicion drains.
-    g.suspicion = Math.max(0, g.suspicion - dt * 0.25);
-    if (g.suspicion < 0.4) g.state = 'patrol';
+    guard.suspicion = Math.max(0, guard.suspicion - dt * 0.25);
+    if (guard.suspicion < 0.4) guard.state = 'patrol';
   }
   return seen;
 }
 
 // Does this guard physically catch the thief?
-export function guardCatches(g, thief) {
-  return dist(g.x, g.y, thief.x, thief.y) < PLAYER.radius + 15;
+export function guardGrabs(guard, thief) {
+  return distance(guard.x, guard.y, thief.x, thief.y) < PLAYER.body + 15;
 }
 
-export function lureGuard(g, x, y, now, seconds) {
-  g.lure = { x, y, until: now + seconds };
-  g.state = 'patrol';
-  g.suspicion = Math.min(g.suspicion, 0.3);
+export function baitGuard(guard, x, y, now, seconds) {
+  guard.lure = { x, y, until: now + seconds };
+  guard.state = 'patrol';
+  guard.suspicion = Math.min(guard.suspicion, 0.3);
 }

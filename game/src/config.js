@@ -1,77 +1,100 @@
-// The Velvet Vault — shared constants: palette, sizes, tuning.
-// One job: every magic number the rest of the game agrees on lives here.
+// The Velvet Vault — the single tuning table every module reads.
+// One rule: a number lives here, never inline in gameplay code, so
+// rebalancing the heist means editing this file and nothing else.
+// It covers the stage size, the room bounds, the night palette, the
+// thief's pace, how fast the alarm climbs, the tool shop, and the
+// length of a night before the cleaner walks in.
 
-export const VIEW_W = 1280;
-export const VIEW_H = 720;
-export const HUD_H = 64;
+export const STAGE_W = 1280;
+export const STAGE_H = 720;
+export const BAR_H = 64;
 
-// Playable room bounds (inside the museum's outer walls).
-export const ROOM = { x: 24, y: HUD_H + 16, w: 1232, h: 600 };
+// The playable floor, inside the museum's outer walls.
+export const FLOOR = { x: 24, y: BAR_H + 16, w: 1232, h: 600 };
 
-// Palette: a night museum — deep blue-black, warm gold, velvet red.
+// Night-museum palette: deep blue-black stone, warm gold, velvet red.
 export const PALETTE = {
-  floorA: '#1c1a26',
-  floorB: '#211e2e',
-  floorLine: '#2e2a40',
-  carpet: '#5e1620',
-  carpetEdge: '#8a2432',
-  wall: '#0d0b14',
-  wallTop: '#3a3352',
-  pedestal: '#4a4238',
-  pedestalTop: '#6b5f4d',
-  statue: '#8f86a0',
-  rope: '#a01e2e',
-  gold: '#e8b64c',
-  goldDim: '#9c7a2e',
-  lootGlow: '#ffd76a',
-  guardBody: '#3f6fb5',
-  guardCone: 'rgba(255, 214, 90, 0.20)',
-  guardConeAlert: 'rgba(255, 64, 64, 0.30)',
-  cameraCone: 'rgba(120, 220, 255, 0.16)',
-  cameraConeAlert: 'rgba(255, 64, 64, 0.28)',
-  thief: '#14101c',
-  thiefTrim: '#e8b64c',
-  smoke: 'rgba(200, 200, 210, 0.35)',
-  text: '#f2ead8',
-  textDim: '#b9ae94',
-  danger: '#ff5252',
-  safe: '#7ee081',
+  floorLight: '#1c1a26',
+  floorDark: '#211e2e',
+  floorSeam: '#2e2a40',
+  runner: '#5e1620',
+  runnerTrim: '#8a2432',
+  wallFill: '#0d0b14',
+  wallTrim: '#3a3352',
+  caseBase: '#4a4238',
+  caseGlass: '#6b5f4d',
+  marble: '#8f86a0',
+  ropeLine: '#a01e2e',
+  goldMain: '#e8b64c',
+  goldSoft: '#9c7a2e',
+  lootHalo: '#ffd76a',
+  guardSuit: '#3f6fb5',
+  coneGuard: 'rgba(255, 214, 90, 0.20)',
+  coneGuardHot: 'rgba(255, 64, 64, 0.30)',
+  coneCamera: 'rgba(120, 220, 255, 0.16)',
+  coneCameraHot: 'rgba(255, 64, 64, 0.28)',
+  thiefSuit: '#14101c',
+  thiefGold: '#e8b64c',
+  smokePuff: 'rgba(200, 200, 210, 0.35)',
+  ink: '#f2ead8',
+  inkSoft: '#b9ae94',
+  alarmRed: '#ff5252',
+  goGreen: '#7ee081',
 };
 
-// Player tuning.
+// How the thief moves and how close a guard must be to notice on proximity.
 export const PLAYER = {
-  radius: 13,
-  walkSpeed: 205, // px per second
-  sneakSpeed: 105,
-  grabRadius: 34, // how close to loot to collect it (key E or walk-over)
-  seenRadius: 150, // distance at which a guard notices even outside a cone
+  body: 13,
+  walk: 205, // pixels per second, standing up
+  sneak: 105, // pixels per second, crouched and quiet
+  reach: 34, // how close to loot before E (or a walk-over) collects it
+  notice: 150, // a guard spots the thief this close even outside its cone
 };
 
-// Alarm tuning.
+// How the alarm meter moves: it climbs while anyone watches the thief
+// and cools off while nobody does; at the lockdown value the vault seals.
 export const ALARM = {
-  guardSpotRate: 34, // per second while fully seen by a guard cone
-  cameraSpotRate: 46, // per second while seen by a camera cone
-  chaseSpotRate: 60,
-  decayRate: 7, // per second while nobody sees the thief
-  lockdownAt: 100,
+  fromGuard: 34, // points per second while fully seen by a guard cone
+  fromCamera: 46, // points per second while seen by a camera cone
+  fromChase: 60,
+  coolDown: 7, // points per second while nobody sees the thief
+  lockdown: 100,
 };
 
-// Tools the thief can buy with coins and spend mid-heist.
+// The kit the thief buys with coins and spends mid-heist.
 export const TOOLS = {
-  emp: { key: '1', name: 'EMP Burst', price: 60, max: 2, desc: 'Kills every camera for 8s' },
-  noise: { key: '2', name: 'Noisemaker', price: 30, max: 3, desc: 'Lures the nearest guard away' },
-  smoke: { key: '3', name: 'Smoke Bomb', price: 50, max: 2, desc: 'Hides you inside a cloud for 6s' },
+  emp: {
+    key: '1',
+    name: 'EMP Burst',
+    price: 60,
+    max: 2,
+    desc: 'Kills every camera for 8s',
+  },
+  noise: {
+    key: '2',
+    name: 'Noisemaker',
+    price: 30,
+    max: 3,
+    desc: 'Lures the nearest guard away',
+  },
+  smoke: {
+    key: '3',
+    name: 'Smoke Bomb',
+    price: 50,
+    max: 2,
+    desc: 'Hides you inside a cloud for 6s',
+  },
 };
 
-export const EMP_DURATION = 8;
-export const SMOKE_DURATION = 6;
-export const NOISE_LURE_SECONDS = 6;
+export const EMP_SECONDS = 8;
+export const SMOKE_SECONDS = 6;
+export const LURE_SECONDS = 6;
 
-// Scoring.
+// Scoring: small change per coin, and a bonus for every second left.
 export const SCORE = {
-  coinPickup: 25,
-  nightBonusPerSecondLeft: 2,
+  coin: 25,
+  timeBonus: 2, // per second left on the clock at the getaway
 };
 
-// Night length in seconds (the cleaner arrives when it hits zero).
-export const NIGHT_SECONDS = 300;
+// How long a night lasts in seconds; the cleaner arrives at zero.
+export const NIGHT_LENGTH = 300;

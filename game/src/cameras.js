@@ -1,9 +1,10 @@
-// The Velvet Vault — security cameras: the sweeping eye on the wall.
-// One job: swing each camera's cone and say how strongly it sees the thief.
+// The Velvet Vault — the wall cameras: the sweeping eye overhead.
+// One job: swing each camera's cone like a pendulum and report how
+// hard it is staring at the thief right now.
 
-import { seenStrength } from './vision.js';
+import { spotStrength } from './vision.js';
 
-export function makeCamera(def) {
+export function spawnCamera(def) {
   return {
     x: def.x,
     y: def.y,
@@ -19,8 +20,8 @@ export function makeCamera(def) {
   };
 }
 
-export function updateCamera(cam, dt, now, thief, blockers) {
-  // Sweep back and forth like a pendulum around the base angle.
+export function tickCamera(cam, dt, now, thief, blockers) {
+  // Swing back and forth like a pendulum around the base angle.
   cam.phase += dt * cam.speed * 2;
   cam.facing = cam.baseAngle + Math.sin(cam.phase) * cam.sweep;
 
@@ -29,11 +30,11 @@ export function updateCamera(cam, dt, now, thief, blockers) {
     return 0;
   }
   const watcher = { x: cam.x, y: cam.y, facing: cam.facing, halfAngle: cam.halfAngle, range: cam.range };
-  const seen = seenStrength(watcher, thief.x, thief.y, blockers, thief.sneaking, thief.hidden);
+  const seen = spotStrength(watcher, thief.x, thief.y, blockers, thief.sneaking, thief.hidden);
   cam.spotting = seen;
   return seen;
 }
 
-export function disableAllCameras(cameras, now, seconds) {
+export function blackoutCameras(cameras, now, seconds) {
   for (const cam of cameras) cam.disabledUntil = now + seconds;
 }
